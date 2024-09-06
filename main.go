@@ -3,13 +3,14 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/go-chi/chi"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/go-chi/chi"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
