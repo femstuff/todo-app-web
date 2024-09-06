@@ -47,6 +47,8 @@ func main() {
 			rout.Post("/done", completeTaskHandler(db))
 		})
 	})
+
+	log.Printf("Server start with port: %v \n", ServPort)
 	if err = http.ListenAndServe(":"+strconv.Itoa(ServPort), router); err != nil {
 		fmt.Printf("Error start server: %s", err.Error())
 		return
