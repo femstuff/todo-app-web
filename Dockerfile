@@ -1,4 +1,4 @@
-FROM golang:1.22 AS builder
+FROM golang:1.22.5 AS builder
 
 WORKDIR /app
 
@@ -8,16 +8,19 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o /taskapp
+ENV CGO_ENABLED=1 GOOS=linux
 
-FROM ubuntu
+RUN go build -o /taskapp
+
+FROM alpine:latest
 
 ENV TODO_PORT=7540
 ENV TODO_DBFILE=scheduler.db
 
 WORKDIR /app
 
-COPY --from=builder . .
+COPY --from=builder /web .
+COPY --from=builder /taskapp .
 
 EXPOSE ${TODO_PORT}
 
