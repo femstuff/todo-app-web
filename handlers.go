@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,6 +13,10 @@ import (
 type Response struct {
 	ID    string `json:"id,omitempty"`
 	Error string `json:"error,omitempty"`
+}
+
+type TaskResponse struct {
+	Tasks []Task `json:"tasks"`
 }
 
 func JsonError(w http.ResponseWriter, messageError string, codeError int) {
@@ -51,7 +54,7 @@ func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(nextDate))
 }
 
-func getTaskHandler(db *sql.DB) http.HandlerFunc {
+func getTaskHandler(store *SchedulerStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 		if id == "" {
@@ -59,7 +62,6 @@ func getTaskHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		store := NewSchedulerStore(db)
 		task, err := store.Get(id)
 		if err != nil {
 			JsonError(w, `error: Task not found`, http.StatusBadRequest)
@@ -71,7 +73,7 @@ func getTaskHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func deleteTaskHandler(db *sql.DB) http.HandlerFunc {
+func deleteTaskHandler(store *SchedulerStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 		if id == "" {
@@ -79,7 +81,6 @@ func deleteTaskHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		store := NewSchedulerStore(db)
 		task, err := store.Get(id)
 		if err != nil {
 			JsonError(w, err.Error(), http.StatusBadRequest)
@@ -111,7 +112,7 @@ func deleteTaskHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func addTaskHandler(db *sql.DB) http.HandlerFunc {
+func addTaskHandler(store *SchedulerStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var task Task
 		var buf bytes.Buffer
@@ -166,8 +167,6 @@ func addTaskHandler(db *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		store := NewSchedulerStore(db)
-
 		res, err := store.Add(task)
 		if err != nil {
 			JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -186,7 +185,7 @@ func addTaskHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func updateTaskHandler(db *sql.DB) http.HandlerFunc {
+func updateTaskHandler(store *SchedulerStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var task Task
 		var buf bytes.Buffer
@@ -203,7 +202,7 @@ func updateTaskHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		if task.ID == "" || task.Date == "" || task.Title == "" {
-			JsonError(w, err.Error(), http.StatusBadRequest)
+			JsonError(w, `task not found`, http.StatusBadRequest)
 			return
 		}
 
@@ -230,8 +229,6 @@ func updateTaskHandler(db *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		store := NewSchedulerStore(db)
-
 		_, err = store.Get(task.ID)
 		if err != nil {
 			JsonError(w, err.Error(), http.StatusBadRequest)
@@ -250,9 +247,8 @@ func updateTaskHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func getTasksHandler(db *sql.DB) http.HandlerFunc {
+func getTasksHandler(store *SchedulerStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		store := NewSchedulerStore(db)
 		res, err := store.GetTasks()
 		if err != nil {
 			JsonError(w, `error with get tasks`, http.StatusBadRequest)
@@ -265,7 +261,7 @@ func getTasksHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func completeTaskHandler(db *sql.DB) http.HandlerFunc {
+func completeTaskHandler(store *SchedulerStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 		if id == "" {
@@ -273,7 +269,6 @@ func completeTaskHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		store := NewSchedulerStore(db)
 		task, err := store.Get(id)
 		if err != nil {
 			JsonError(w, err.Error(), http.StatusBadRequest)

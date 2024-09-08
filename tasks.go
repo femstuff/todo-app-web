@@ -13,10 +13,6 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
-type TaskResponse struct {
-	Tasks []Task `json:"tasks"`
-}
-
 type SchedulerStore struct {
 	db *sql.DB
 }
@@ -73,7 +69,7 @@ func (s SchedulerStore) Delete(id string) error {
 func (s SchedulerStore) Get(id string) (Task, error) {
 	var task Task
 
-	row := s.db.QueryRow("SELECT * FROM scheduler WHERE id = :id",
+	row := s.db.QueryRow("SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id",
 		sql.Named("id", id))
 	err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
@@ -86,8 +82,8 @@ func (s SchedulerStore) Get(id string) (Task, error) {
 func (s SchedulerStore) GetTasks() (TaskResponse, error) {
 	var tasks TaskResponse
 
-	rows, err := s.db.Query("SELECT * FROM scheduler ORDER BY date LIMIT :limit",
-		sql.Named("limit", 50))
+	rows, err := s.db.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit",
+		sql.Named("limit", dbLimit))
 	if err != nil {
 		return TaskResponse{}, err
 	}
@@ -102,6 +98,9 @@ func (s SchedulerStore) GetTasks() (TaskResponse, error) {
 		}
 
 		tasks.Tasks = append(tasks.Tasks, task)
+	}
+	if err = rows.Err(); err != nil {
+		return TaskResponse{}, err
 	}
 
 	if len(tasks.Tasks) == 0 {

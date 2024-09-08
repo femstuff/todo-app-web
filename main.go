@@ -21,16 +21,18 @@ func main() {
 	}
 	DbFile := filepath.Join(appPath, DBFile)
 
-	err = checkDB(DbFile)
+	err = CheckDB(DbFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db, err := sql.Open(dbDriver, DBFile)
+	db, err := sql.Open(DbDriver, DBFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	store := NewSchedulerStore(db)
 
 	router := chi.NewRouter()
 
@@ -38,14 +40,14 @@ func main() {
 	router.Handle("/*", http.StripPrefix("/", server))
 	router.Route("/api", func(r chi.Router) {
 		r.Get("/nextdate", nextDateHandler)
-		r.Get("/tasks", getTasksHandler(db))
+		r.Get("/tasks", getTasksHandler(&store))
 
 		r.Route("/task", func(rout chi.Router) {
-			rout.Get("/", getTaskHandler(db))
-			rout.Post("/", addTaskHandler(db))
-			rout.Delete("/", deleteTaskHandler(db))
-			rout.Put("/", updateTaskHandler(db))
-			rout.Post("/done", completeTaskHandler(db))
+			rout.Get("/", getTaskHandler(&store))
+			rout.Post("/", addTaskHandler(&store))
+			rout.Delete("/", deleteTaskHandler(&store))
+			rout.Put("/", updateTaskHandler(&store))
+			rout.Post("/done", completeTaskHandler(&store))
 		})
 	})
 

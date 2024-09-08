@@ -1,51 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 )
-
-func zeroTime(t time.Time) time.Time {
-	y, m, d := t.Date()
-	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
-}
-
-func checkDB(dbPath string) error {
-	_, err := os.Stat(dbPath)
-	if os.IsNotExist(err) {
-		db, err := sql.Open(dbDriver, dbPath)
-		if err != nil {
-			return err
-		}
-		defer db.Close()
-
-		query := `
-        CREATE TABLE scheduler (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			date VARCHAR(8) NOT NULL,
-			title TEXT NOT NULL,
-			comment TEXT DEFAULT "",
-			repeat VARCHAR(128) DEFAULT ""
-		);
-		CREATE INDEX idx_scheduler_date ON scheduler(date);
-        `
-		_, err = db.Exec(query)
-		if err != nil {
-			return fmt.Errorf("failed to create table: %w", err)
-		}
-
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func NextDate(now time.Time, date, repeat string) (string, error) {
 	parsDate, err := time.Parse(dateFormat, date)
@@ -99,23 +59,7 @@ func NextDate(now time.Time, date, repeat string) (string, error) {
 	return nextDate.Format(dateFormat), nil
 }
 
-func getServPort(env string) int {
-	key := os.Getenv(env)
-	if key == "" {
-		return defaultPort
-	}
-	port, err := strconv.Atoi(key)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	return port
-}
-
-func getDbFile(env string) string {
-	key := os.Getenv(env)
-
-	if key == "" {
-		return dbFile
-	}
-	return key
+func zeroTime(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }
